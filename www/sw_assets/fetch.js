@@ -108,11 +108,18 @@ Response.prototype.toDict = function() {
 
 // This function returns a promise with a response for fetching the given resource.
 function fetch(input) {
+  // input e.g. {"method":"file:///radar?_sw-precache=0754b2be6ccea0b2ffaa43e2e8d0fc20","url":{"credentials":"same-origin","redirect":"follow"},"headers":{"headerDict":{}}}
+
   // Assume the passed in input is a resource URL string.
   // TODO: What should the default headers be?
+
   var method = 'GET';
   var url = input;
   var headers = {};
+
+  console.log('fetch stack:' + StackTrace.getSync().join('\n'));
+  console.log('fetch type: ' + (typeof input));
+  console.log('fetch: ' + JSON.stringify(input));
 
   // If it's actually an object, get the data from it.
   if (typeof input === 'object') {

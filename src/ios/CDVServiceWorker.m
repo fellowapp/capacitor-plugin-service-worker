@@ -29,6 +29,7 @@
 static bool isServiceWorkerActive = NO;
 
 NSString * const SERVICE_WORKER = @"serviceworker";
+NSString * const SERVICE_WORKER_HOST = @"serviceworkerhost";
 NSString * const SERVICE_WORKER_SCOPE = @"serviceworkerscope";
 NSString * const SERVICE_WORKER_CACHE_CORDOVA_ASSETS = @"cachecordovaassets";
 NSString * const SERVICE_WORKER_ACTIVATED = @"ServiceWorkerActivated";
@@ -53,7 +54,10 @@ NSString * const SERVICE_WORKER_KEY_SCRIPT_URL = @"scriptURL";
 @synthesize requestDelegates = _requestDelegates;
 @synthesize requestQueue = _requestQueue;
 @synthesize serviceWorkerScriptFilename = _serviceWorkerScriptFilename;
+@synthesize serviceWorkerHost = _serviceWorkerHost;
 @synthesize cacheApi = _cacheApi;
+
++ (bool)serviceWorkerActive { return isServiceWorkerActive; }
 
 - (NSString *)hashForString:(NSString *)string
 {
@@ -118,6 +122,7 @@ CDVServiceWorker *singletonInstance = nil; // TODO: Something better
         CDVViewController *vc = (CDVViewController *)[self viewController];
         NSMutableDictionary *settings = [vc settings];
         self.serviceWorkerScriptFilename = [settings objectForKey:SERVICE_WORKER];
+        self.serviceWorkerHost = [settings objectForKey:SERVICE_WORKER_HOST];
         NSObject *cacheCordovaAssetsObject = [settings objectForKey:SERVICE_WORKER_CACHE_CORDOVA_ASSETS];
         serviceWorkerScope = [settings objectForKey:SERVICE_WORKER_SCOPE];
         cacheCordovaAssets = (cacheCordovaAssetsObject == nil) ? YES : [(NSString *)cacheCordovaAssetsObject boolValue];
@@ -131,6 +136,13 @@ CDVServiceWorker *singletonInstance = nil; // TODO: Something better
     [self.viewController.view addSubview:self.workerWebView];
     [self.workerWebView setDelegate:self];
     [self.workerWebView loadHTMLString:@"<html><title>Service Worker Page</title></html>" baseURL:[NSURL fileURLWithPath:[[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@"GeneratedWorker.html"]]];
+
+    // TODO: make the serviceworker thread inspectable/debuggable in safari
+    //NSURL *url = [NSURL fileURLWithPath:[[NSBundle mainBundle] pathForResource:@"index" ofType:@"html" inDirectory:@"www/sw_assets"]];
+    ////NSURL *dir = [NSURL fileURLWithPath:[[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"www/sw_assets"] isDirectory:true];
+    ////Load the request in the UIWebView.
+    //[self.workerWebView loadRequest:[NSURLRequest requestWithURL:url]];
+    ////[self.workerWebView loadHTMLString:@"<html><title>Service Worker Page</title></html>" baseURL:[NSURL fileURLWithPath:[[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@"GeneratedWorker.html"]]];
 }
 
 # pragma mark ServiceWorker Functions
@@ -309,8 +321,14 @@ CDVServiceWorker *singletonInstance = nil; // TODO: Something better
 
     self.context[@"handleTrueFetch"] = ^(JSValue *method, JSValue *resourceUrl, JSValue *headers, JSValue *resolve, JSValue *reject) {
         NSString *resourceUrlString = [resourceUrl toString];
+        NSLog(@"handleTrueFetch %@", resourceUrlString);
         if (![[resourceUrl toString] containsString:@"://"]) {
-            resourceUrlString = [NSString stringWithFormat:@"file://%@/www/%@", [[NSBundle mainBundle] resourcePath], resourceUrlString];
+            if (self.serviceWorkerHost != nil) {
+              resourceUrlString = [NSString stringWithFormat:@"%@%@", self.serviceWorkerHost, resourceUrlString];
+            }
+            else {
+              resourceUrlString = [NSString stringWithFormat:@"file://%@/www/%@", [[NSBundle mainBundle] resourcePath], resourceUrlString];
+            }
         }
 
         // Create the request.
@@ -418,14 +436,40 @@ CDVServiceWorker *singletonInstance = nil; // TODO: Something better
 
 - (void)webViewDidFinishLoad:(UIWebView *)wv
 {
+    return;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     bool serviceWorkerInstalled = [defaults boolForKey:SERVICE_WORKER_INSTALLED];
     bool serviceWorkerActivated = [defaults boolForKey:SERVICE_WORKER_ACTIVATED];
     NSString *serviceWorkerScriptChecksum = [defaults stringForKey:SERVICE_WORKER_SCRIPT_CHECKSUM];
     if (self.serviceWorkerScriptFilename != nil) {
-        NSString *serviceWorkerScriptRelativePath = [NSString stringWithFormat:@"www/%@", self.serviceWorkerScriptFilename];
-        NSLog(@"ServiceWorker relative path: %@", serviceWorkerScriptRelativePath);
-        NSString *serviceWorkerScript = [self readScriptAtRelativePath:serviceWorkerScriptRelativePath];
+        NSString *serviceWorkerScript = nil;
+        if (self.serviceWorkerHost == nil) {
+          NSString *serviceWorkerScriptRelativePath = [NSString stringWithFormat:@"www/%@", self.serviceWorkerScriptFilename];
+          NSLog(@"ServiceWorker relative path: %@", serviceWorkerScriptRelativePath);
+          serviceWorkerScript = [self readScriptAtRelativePath:serviceWorkerScriptRelativePath];
+        } else {
+          NSString *serviceWorkerScriptUrl = [NSString stringWithFormat:@"%@/%@", self.serviceWorkerHost, self.serviceWorkerScriptFilename];
+          NSLog(@"ServiceWorker url: %@", serviceWorkerScriptUrl);
+
+          NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:[[NSURL alloc] initWithString: serviceWorkerScriptUrl] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:5.0];
+          NSDictionary *headers = [NSHTTPCookie requestHeaderFieldsWithCookies: [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies]];
+          [request setAllHTTPHeaderFields:headers];
+          NSURLResponse * response = nil;
+          NSError *error = nil;
+          NSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+          if (data != nil) {
+            serviceWorkerScript = [[NSString alloc] initWithData:data encoding:NSASCIIStringEncoding];
+          }
+          else {
+            [defaults setBool:NO forKey:SERVICE_WORKER_INSTALLED];
+            [defaults setBool:NO forKey:SERVICE_WORKER_ACTIVATED];
+          }
+          // TODO: handle errors?
+          //if (error == nil) {
+          //  NSLog(@"ServiceWorker error loading remote worker: %@", error);
+          //}
+        }
+        NSLog(@"ServiceWorker script: %@", serviceWorkerScript);
         if (serviceWorkerScript != nil) {
             if (![[self hashForString:serviceWorkerScript] isEqualToString:serviceWorkerScriptChecksum]) {
                 serviceWorkerInstalled = NO;

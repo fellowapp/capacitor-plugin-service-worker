@@ -39,6 +39,7 @@ extern NSString * const SERVICE_WORKER_KEY_SCRIPT_URL;
 
 @interface CDVServiceWorker : CDVPlugin <UIWebViewDelegate> {}
 
++ (bool)serviceWorkerActive;
 + (CDVServiceWorker *)instanceForRequest:(NSURLRequest *)request;
 - (void)addRequestToQueue:(NSURLRequest *)request withId:(NSNumber *)requestId delegateTo:(NSURLProtocol *)protocol;
 
@@ -48,6 +49,7 @@ extern NSString * const SERVICE_WORKER_KEY_SCRIPT_URL;
 @property (nonatomic, retain) NSMutableArray *requestQueue;
 @property (nonatomic, retain) NSDictionary *registration;
 @property (nonatomic, retain) NSString *serviceWorkerScriptFilename;
+@property (nonatomic, retain) NSString *serviceWorkerHost;
 @property (nonatomic, retain) ServiceWorkerCacheApi *cacheApi;
 
 @end

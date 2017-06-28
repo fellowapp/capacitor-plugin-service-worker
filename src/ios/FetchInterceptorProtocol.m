@@ -28,8 +28,20 @@
 static int64_t requestCount = 0;
 
 + (BOOL)canInitWithRequest:(NSURLRequest *)request {
+    if (!CDVServiceWorker.serviceWorkerActive) {
+        return NO;
+    }
+
+    // Don't proxy local files
+    if ([[[request URL] scheme] isEqualToString:@"file"]) {
+        return NO;
+    }
+
     // We don't want to intercept any requests for the worker page.
     if ([[[request URL] absoluteString] hasSuffix:@"GeneratedWorker.html"]) {
+        return NO;
+    }
+    if ([[[request URL] absoluteString] hasSuffix:@"serviceworker.js"]) {
         return NO;
     }
 
