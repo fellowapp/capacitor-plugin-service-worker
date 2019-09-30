@@ -1,6 +1,8 @@
 # Service Worker Plugin for iOS
 
-This plugin adds [Service Worker](https://github.com/slightlyoff/ServiceWorker) support to Cordova apps on iOS.  To use it:
+This project has been modified to work with Capacitor instead of Cordova.
+
+This plugin adds [Service Worker](https://github.com/slightlyoff/ServiceWorker) support to Capacitor apps on iOS.  To use it:
 
 1. Install this plugin.
 2. Create `sw.js` in your `www/` directory.
