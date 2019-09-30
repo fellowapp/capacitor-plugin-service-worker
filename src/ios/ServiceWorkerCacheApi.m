@@ -266,7 +266,8 @@ static NSString *rootPath_;
 -(BOOL)initializeStorage
 {
     NSBundle* mainBundle = [NSBundle mainBundle];
-    rootPath_ = [[NSURL fileURLWithPath:[mainBundle pathForResource:@"www" ofType:@"" inDirectory:@""]] absoluteString];
+    NSString* resourcePath = [mainBundle pathForResource:@"public" ofType:@"" inDirectory:@""];
+    rootPath_ = [[NSURL fileURLWithPath:resourcePath] absoluteString];
 
     if (moc == nil) {
         NSManagedObjectModel *model = [ServiceWorkerCacheApi createManagedObjectModel];
