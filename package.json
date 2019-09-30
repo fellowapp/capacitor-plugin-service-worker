@@ -1,29 +1,29 @@
 {
-  "name": "phonegap-plugin-service-worker",
+  "name": "capacitor-plugin-service-worker",
   "version": "1.0.1",
   "description": "Service Worker Plugin",
   "cordova": {
-    "id": "phonegap-plugin-service-worker",
+    "id": "capacitor-plugin-service-worker",
     "platforms": [
       "ios"
     ]
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/phonegap/phonegap-plugin-service-worker.git"
+    "url": "https://github.com/fellowinsights/capacitor-plugin-service-worker.git"
   },
   "keywords": [
-    "cordova",
+    "capacitor",
     "serviceworker",
     "service",
     "worker",
-    "ecosystem:cordova",
-    "cordova-ios"
+    "ecosystem:capacitor",
+    "capacitor-ios"
   ],
   "author": "The Chrome Team",
   "license": "Apache 2.0",
   "bugs": {
-    "url": "https://github.com/phonegap/phonegap-plugin-service-worker/issues"
+    "url": "https://github.com/fellowinsights/capacitor-plugin-service-worker/issues"
   },
-  "homepage": "https://github.com/phonegap/phonegap-plugin-service-worker"
+  "homepage": "https://github.com/fellowinsights/capacitor-plugin-service-worker"
 }
